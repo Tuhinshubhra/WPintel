@@ -1,0 +1,35 @@
+{
+    "name": "WPintel",
+    "author": "Tuhinshubhra",
+    "version": "1.4",
+    "description": "WordPress Vulnerability Scanner - Scan for vulnerabilities, version, themes, plugins and much more!",
+    "manifest_version": 2,
+    "icons" : {
+        "16": "images/logo_16.png",
+        "32": "images/logo_32.png",
+        "48": "images/logo_48.png",
+        "128": "images/logo_128.png"
+    },
+    "background": {
+        "page": "html/background.html"
+    },
+    "page_action": {
+        "default_popup": "html/popup.html",
+        "default_title": "WPintel - WordPress Scanner",
+        "default_icon": {
+            "16": "images/logo_16.png",
+            "32": "images/logo_32.png",
+            "48": "images/logo_48.png",
+            "128": "images/logo_128.png"
+          }
+    },
+    "permissions": [
+        "tabs", "activeTab", "https://*/*", "http://*/*", "webRequest"
+    ],
+    "content_security_policy": "script-src 'self' https://ssl.google-analytics.com; object-src 'self'",
+    "content_scripts": [{
+        "matches": ["*://*/*"],
+        "js": ["js/content.js", "js/include.js"],
+        "run_at": "document_start"
+    }]
+}

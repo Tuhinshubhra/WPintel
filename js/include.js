@@ -1,0 +1,1 @@
+var DEBUG=!1;function wpintel_debug(o){DEBUG&&console.log("%c[WPintel DEBUG]%c "+o,"background: #222; color: #bada55","background: white; color: black")}
