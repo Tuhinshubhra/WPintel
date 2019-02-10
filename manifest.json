@@ -1,7 +1,7 @@
 {
-    "name": "WPintel",
+    "name": "WPintel - WordPress Vulnerability Scanner",
     "author": "Tuhinshubhra",
-    "version": "1.4",
+    "version": "1.6",
     "description": "WordPress Vulnerability Scanner - Scan for vulnerabilities, version, themes, plugins and much more!",
     "manifest_version": 2,
     "icons" : {
@@ -31,5 +31,6 @@
         "matches": ["*://*/*"],
         "js": ["js/content.js", "js/include.js"],
         "run_at": "document_start"
-    }]
+    }],
+    "web_accessible_resources": ["resources/Quicksand-Regular.ttf"]
 }

@@ -1,12 +1,19 @@
 body {
   background: #fff;
-  font-family: 'Quicksand', sans-serif;
+  font-family: Quicksand;
   font-size: .8rem;
   /** height: 25rem; **/
   min-height: 22rem;
   margin: 0;
   overflow: hidden;
   width: 20rem;
+}
+
+@font-face {
+    font-family: 'Quicksand';
+    font-style: normal;
+    font-weight: normal;
+    src: url('chrome-extension://__MSG_@@extension_id__/resources/Quicksand-Regular.ttf') format("truetype"); 
 }
 
 .target_holder {
@@ -40,7 +47,7 @@ body {
 .target {
     display: inline-block;
     font-weight: 100;
-    font-family: 'Quicksand', sans-serif;
+    font-family: Quicksand;
     width: 66%;
     text-align: center;
     background: transparent;
@@ -478,7 +485,7 @@ td{
     background: #347be1;
     text-transform: uppercase;
     border-radius: 5px;
-    font-family: 'Quicksand', sans-serif;
+    font-family: Quicksand;
     font-size: 20px;
     padding: 4px;
     color: #fff;
