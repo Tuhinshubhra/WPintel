@@ -1,1 +1,325 @@
-async function check_path(e){show_scanning("../images/gathering.svg","Looking for Path Disclosure..","8"),fetch(e+"/wp-includes/rss.php").then(e=>{e.text().then(e=>{try{var t=e.match(/<b>\/(.*?)wp-includes\/rss.php<\/b/)[1];return t="/"+t,wpintel_debug("Path detected: "+t),show_success(t),!0}catch(e){return wpintel_debug("Error getting path: "+e),show_error("path not detected!"),!1}}).catch(()=>(show_error("path not detected!"),wpintel_debug("response.text catch"),!1))}).catch(()=>(show_error("path not detected!"),wpintel_debug("fetch catch"),!1))}async function check_users(e){show_scanning("../images/users.svg","Acquiring Usernames...","7");var t=e+"/wp-json/wp/v2/users";window.wordpress_users=[],fetch(t).then(e=>{e.text().then(e=>{if(/slug/.test(e)){for(var t=JSON.parse(e),n=0;n<t.length;n++)try{var r=t[n].slug;wpintel_debug("Enumerated username: "+r),r+="||"+t[n].name,window.wordpress_users.push(r)}catch(e){wpintel_debug("Error getting user slug: "+e)}return window.wordpress_users.length>0?(show_users(window.wordpress_users),!0):(show_error("No usernames could be enumerated!"),!1)}return wpintel_debug('no "slug" in json content'),show_error("No usernames could be enumerated!"),!1})}).catch(e=>(wpintel_debug("Something went wrong while getting json content: "+e),show_error("No usernames could be enumerated!"),!1))}async function check_reg(e){show_scanning("../images/reg.svg","Probing User Registration...","5");var t=e+"/wp-login.php?action=register";wpintel_debug("Registration URL: "+t);await async function(e){fetch(e).then(e=>{e.text().then(e=>{if(wpintel_debug("got registration source"),/<form/.test(e)){if(/Registration confirmation will be emailed to you/.test(e)||/value="Register"/.test(e)||/id="user_email"/.test(e)){var n='<a href="'+t+'" class="reg_button">REGISTER HERE</a>';return show_success("User registration is <b>enabled</b> in this site.<br><br>"+n),!0}return show_error("User registration disabled!"),wpintel_debug("No valid registration element found"),!1}return show_error("User registration disabled!"),!1})})}(t)}async function check_theme(e,t){show_scanning("../images/themes.svg","Getting Theme Information...","2");t.getElementsByTagName("link");window.wordpress_themes=[],window.wordpress_plugins=[],window.theme_detected=!1,window.plugins_detected=!1;await async function(e){for(var t=0;t<e.length;t++){var n=e[t];if(wpintel_debug("Testing link: "+n),/wp-content\/themes/.test(n))try{var r=n.match(/wp-content\/themes\/(.*?)\//)[1];window.wordpress_themes.indexOf(r)>-1||(window.wordpress_themes.push(r),wpintel_debug("Detected theme: "+r),window.theme_detected=!0)}catch(e){wpintel_debug("Error: "+e+" while detecting theme from url: "+n)}else if(/wp-content\/plugins/.test(n))try{var s=n.match(/wp-content\/plugins\/(.*?)\//)[1];window.wordpress_plugins.indexOf(s)>-1||(wpintel_debug("Detected plugin: "+s),window.wordpress_plugins.push(s),window.plugins_detected=!0)}catch(e){wpintel_debug("Error: "+e+" while detecting plugin from url: "+n)}}}(e),await async function(){if(!window.theme_detected&&!window.plugins_detected)return show_error("WPintel could not detect any themes or plugins"),!1;show_themes_and_plugins(window.targeturl,window.wordpress_themes,window.wordpress_plugins)}()}function check_version(e,t,n){show_scanning("../images/version.svg","Getting WordPress Version...","1");window.wordpress_version="0",new Promise(function(e,n){wpintel_debug("checking version via generator meta tag");try{var r=t.querySelector("meta[name='generator']").getAttribute("content");if(/WordPress/.test(r)){var s=r.match(/WordPress (.*)/)[1];window.wordpress_version=s,e(!0)}else wpintel_debug("version detection using generator failed"),n(!0)}catch(e){wpintel_debug("error with generator meta tag: "+e),n(!0)}}).then(()=>(check_vuln(window.wordpress_version),wpintel_debug("Version: "+wordpress_version+" detected via generator meta tag"),!0)).catch(()=>{new Promise((t,n)=>{if(/wp-emoji-release\.min\.js\?ver/.test(e)){var r=e.match(/wp-emoji-release\.min\.js\?ver=(.*?)"/)[1];window.wordpress_version=r,t(!0)}else wpintel_debug("Version detection via wp-emoji failed!"),n(!0)}).then(()=>(check_vuln(window.wordpress_version),wpintel_debug("Version: "+wordpress_version+" detected via wp-emoji"),!0)).catch(()=>{new Promise(function(e,t){wpintel_debug("triggered feed_version function: "+n),fetch(n+"/feed/").then(function(e){e.text().then(e=>{new Promise(function(t,n){try{var r=e.match(/<generator>https:\/\/wordpress.org\/\?v=(.*?)<\/generator>/)[1];window.wordpress_version=r,wpintel_debug("feed: "+r),t(!0)}catch(e){wpintel_debug("version detection via feeds failed: "+e),n(!0)}}).then(()=>(check_vuln(window.wordpress_version),wpintel_debug("Version: "+wordpress_version+" detected via /feed/"),!0)).catch(()=>{t(!0)})})}).catch(()=>{wpintel_debug("fetch caught exception for feed"),t(!0)})}).then(()=>!0).catch(()=>{new Promise(function(e,t){wpintel_debug("triggered atom_version function: "+n),fetch(n+"/feed/atom").then(function(e){e.text().then(e=>{new Promise(function(t,n){try{var r=e.match(/version="(.*?)">WordPress/)[1];window.wordpress_version=r,wpintel_debug("atom: "+r),t(!0)}catch(e){wpintel_debug("Error detecting version via atom feed: "+e),n(!0)}}).then(()=>(check_vuln(window.wordpress_version),wpintel_debug("Version: "+wordpress_version+" detected via /feed/atom/"),!0)).catch(()=>{t(!0)})})}).catch(()=>{wpintel_debug("fetch caught exception for atom"),t(!0)})}).then(()=>!0).catch(()=>{new Promise(function(e,t){wpintel_debug("triggered opml_version function: "+n),fetch(n+"/wp-links-opml.php").then(function(e){e.text().then(e=>{new Promise(function(t,n){try{var r=e.match(/generator="WordPress\/(.*?)"/)[1];window.wordpress_version=r,wpintel_debug("opml: "+r),t(!0)}catch(e){wpintel_debug("Error detecting version from opml source: "+e),n(!0)}}).then(()=>(check_vuln(window.wordpress_version),wpintel_debug("Version: "+wordpress_version+" detected via wp-links-opml.php"),!0)).catch(()=>{t(!0)})})}).catch(()=>{wpintel_debug("fetch caught exception for atom"),t(!0)})}).then(()=>!0).catch(()=>(show_error("<b>Oops!!!</b><br>WordPress version could not be detected!"),!1))})})})})}function check_vuln(e){show_scanning("../images/crawl_vuln.svg","Checking for Version Vulnerabilities...","4");var t="https://wpvulndb.com/api/v2/wordpresses/"+e.split(".").join("");wpintel_debug("wpvuln url: "+t),fetch(t).then(t=>{t.text().then(t=>{wpintel_debug("got version info from wpvulndb successfully"),show_version(e,t)}).catch(()=>{wpintel_debug("wpvulndb catch 1"),show_version(e,!1)})}).catch(t=>{wpintel_debug("wpvulndb catch 2: "+t),show_version(e,!1)})}
+async function check_path(url){
+    show_scanning('../images/gathering.svg', 'Looking for Path Disclosure..', '8');
+    var rss_url = url + '/wp-includes/rss.php';
+    fetch(rss_url).then((response) => {
+        response.text().then((content) => {
+            try {
+                var path = content.match(/<b>\/(.*?)wp-includes\/rss.php<\/b/)[1];
+                path = '/' + path;
+                wpintel_debug('Path detected: ' + path);
+                show_success(path);
+                return true;
+            } catch (err) {
+                wpintel_debug('Error getting path: ' + err)
+                show_error('path not detected!');
+                return false;
+            }
+        }).catch(() => {
+            show_error('path not detected!');
+            wpintel_debug('response.text catch');
+            return false;
+        });
+    }).catch(() => {
+        show_error('path not detected!');
+        wpintel_debug('fetch catch');
+        return false;
+    });
+}
+
+async function check_users(url){
+    show_scanning('../images/users.svg', 'Acquiring Usernames...', '7');
+    var json_url = url + '/wp-json/wp/v2/users';
+    window.wordpress_users = [];
+    
+    fetch(json_url).then((response) => {
+        response.text().then((content) => {
+            if (/slug/.test(content)){
+                var json_content = JSON.parse(content);
+                for (var i=0; i < json_content.length; i++){
+                    try {
+                        var user = json_content[i]['slug'];
+                        wpintel_debug('Enumerated username: ' + user);
+                        user += '||' + json_content[i]['name']
+                        window.wordpress_users.push(user);
+                    } catch (err) {
+                        wpintel_debug('Error getting user slug: ' + err);
+                    }
+                }
+                if (window.wordpress_users.length > 0){
+                    show_users(window.wordpress_users);
+                    return true;
+                } else {
+                    show_error('No usernames could be enumerated!');
+                    return false;
+                }
+            } else {
+                wpintel_debug('no "slug" in json content');
+                show_error('No usernames could be enumerated!');
+                return false;
+            }
+        })
+    }).catch((err) => {
+        wpintel_debug('Something went wrong while getting json content: ' + err);
+        show_error('No usernames could be enumerated!');
+        return false;
+    })
+}
+
+async function check_reg(url){
+    show_scanning('../images/reg.svg', 'Probing User Registration...', '5');
+    var reg_url = url + '/wp-login.php?action=register';
+    wpintel_debug('Registration URL: ' + reg_url);
+    var reg_source = await getregsrc(reg_url);
+
+    async function getregsrc(url){
+        fetch(url).then((response) => {
+            response.text().then((source) => {
+                wpintel_debug('got registration source');
+                if (/<form/.test(source)){
+                    if (/Registration confirmation will be emailed to you/.test(source) || /value="Register"/.test(source) || /id="user_email"/.test(source)){
+                        var reg_ahref = '<a href="' + reg_url + '" class="reg_button">REGISTER HERE</a>'
+                        show_success('User registration is <b>enabled</b> in this site.<br><br>' + reg_ahref);
+                        return true;
+                    } else {
+                        show_error('User registration disabled!');
+                        wpintel_debug('No valid registration element found');
+                        return false;
+                    }
+                } else {
+                    show_error('User registration disabled!');
+                    return false;
+                }
+            });
+        });
+    }
+}
+
+
+async function check_theme(alllinks, parsed_source){
+    show_scanning('../images/themes.svg', 'Getting Theme Information...', '2');
+    var links = parsed_source.getElementsByTagName('link');
+    window.wordpress_themes = [];
+    window.wordpress_plugins = [];
+    window.theme_detected = false;
+    window.plugins_detected = false;
+    var docheck = await check(alllinks);
+    var result = await showResult();
+
+    async function check(alllinks){
+        for (var i = 0; i < alllinks.length; i++){
+            var href = alllinks[i];
+            wpintel_debug('Testing link: ' + href);
+            if (/wp-content\/themes/.test(href)){
+                try {
+                    var theme = href.match(/wp-content\/themes\/(.*?)\//)[1];
+                    // check if theme already detected
+                    if (window.wordpress_themes.indexOf(theme) > -1){
+                        // duplicate detected
+                    } else {
+                        window.wordpress_themes.push(theme);
+                        wpintel_debug('Detected theme: ' + theme);
+                        window.theme_detected = true;
+                    }
+                    
+                    //show_success(String(window.wordpress_themes.length) + ' WordPress theme(s) detected');
+                    //return true;
+                } catch (err) {
+                    wpintel_debug('Error: ' + err + ' while detecting theme from url: ' + href);
+                    // show_error('WordPress theme could not be detected');
+                }
+            } else if (/wp-content\/plugins/.test(href)) {
+                try {
+                    var plugin = href.match(/wp-content\/plugins\/(.*?)\//)[1];
+                    if (window.wordpress_plugins.indexOf(plugin) > -1){}else{
+                        wpintel_debug('Detected plugin: ' + plugin);
+                        window.wordpress_plugins.push(plugin);
+                        window.plugins_detected = true;
+                    }
+                    
+                } catch (err){
+                    wpintel_debug('Error: ' + err + ' while detecting plugin from url: ' + href);
+                }
+            }
+        }
+    }
+    
+    async function showResult(){
+        if (window.theme_detected || window.plugins_detected){
+            show_themes_and_plugins(window.targeturl, window.wordpress_themes, window.wordpress_plugins);
+        } else {
+            show_error('WPintel could not detect any themes or plugins');
+            return false;
+        }
+    }
+}
+
+
+function check_version(source_string, parsed_source, url){
+    show_scanning('../images/version.svg', 'Getting WordPress Version...', '1');
+    var var_detected = false;
+    window.wordpress_version = '0';
+    new Promise(function (resolve, reject){
+        // the generator meta tag check
+        wpintel_debug('checking version via generator meta tag');
+        try {
+            var generator_version = parsed_source.querySelector("meta[name='generator']").getAttribute("content");
+            if (/WordPress/.test(generator_version)){
+                var version = generator_version.match(/WordPress (.*)/)[1];
+                window.wordpress_version = version;
+                resolve(true);
+            } else {
+                wpintel_debug('version detection using generator failed');
+                reject(true);
+            }
+        } catch(err) {
+            wpintel_debug('error with generator meta tag: ' + err);
+            reject(true);
+        }
+    }).then(() => {
+        // version detected via generator meta tag
+        check_vuln(window.wordpress_version)
+        wpintel_debug('Version: ' + wordpress_version + ' detected via generator meta tag');
+        return true;
+    }).catch(() => {
+        new Promise((resolve, reject) => {
+           if (/wp-emoji-release\.min\.js\?ver/.test(source_string)){
+               var version = source_string.match(/wp-emoji-release\.min\.js\?ver=(.*?)"/)[1];
+               window.wordpress_version = version;
+               resolve(true);
+           } else {
+               wpintel_debug('Version detection via wp-emoji failed!');
+               reject(true);
+           }
+        }).then(() => {
+            // version detected via generator meta tag
+            check_vuln(window.wordpress_version)
+            wpintel_debug('Version: ' + wordpress_version + ' detected via wp-emoji');
+            return true;
+        }).catch(() => {
+            new Promise(function (resovle, reject){
+                // feed version check
+                wpintel_debug('triggered feed_version function: ' + url);
+                var feed_url = url + '/feed/';
+                fetch(feed_url).then(function (response){
+                    response.text().then((source) => {
+                        new Promise(function(resolve, reject){
+                            try {
+                                // wpintel_debug(source);
+                                var version = source.match(/<generator>https:\/\/wordpress.org\/\?v=(.*?)<\/generator>/)[1];
+                                window.wordpress_version = version;
+                                wpintel_debug('feed: ' + version);
+                                resolve(true);
+                            } catch(err){
+                                wpintel_debug('version detection via feeds failed: ' + err);
+                                reject(true);
+                            } 
+                        }).then(() => {
+                            // version detected via feed
+                            check_vuln(window.wordpress_version)
+                            wpintel_debug('Version: ' + wordpress_version + ' detected via /feed/');
+                            return true;
+                        }).catch(() => {reject(true)});     
+                    });
+                }).catch(() => {
+                    // the fetch had some issues
+                    wpintel_debug('fetch caught exception for feed');
+                    reject(true);
+                });
+            }).then(() => {
+                // version detected via feed
+                //check_vuln(window.wordpress_version)
+                //wpintel_debug('Version: ' + wordpress_version + ' detected via /feed/');
+                return true;
+            }).catch(() => {
+                new Promise(function(resolve, reject){
+                    // atom version check
+                    wpintel_debug('triggered atom_version function: ' + url);
+                    var atom_url = url + '/feed/atom';
+                    fetch(atom_url).then(function(response){
+                        response.text().then((source) => {
+                            new Promise(function(resolve, reject){
+                                try {
+                                    var version = source.match(/version="(.*?)">WordPress/)[1];
+                                    window.wordpress_version = version;
+                                    wpintel_debug('atom: ' + version);
+                                    resolve(true);
+                                } catch(err) {
+                                    wpintel_debug('Error detecting version via atom feed: ' + err);
+                                    reject(true);
+                                }
+                            }).then(() => {
+                                // version detection successful via atom
+                                check_vuln(window.wordpress_version)
+                                wpintel_debug('Version: ' + wordpress_version + ' detected via /feed/atom/');
+                                return true;
+                            }).catch(() => {reject(true)});;
+                        });
+                    }).catch(() => {
+                        // catch for fetch for atom
+                        wpintel_debug('fetch caught exception for atom');
+                        reject(true);
+                    });
+                }).then(() => {
+                    // version detection successful via atom
+                    //check_vuln(window.wordpress_version)
+                    //wpintel_debug('Version: ' + wordpress_version + ' detected via /feed/atom/');
+                    return true;
+                }).catch(() => {
+                    new Promise(function(resolve, reject){
+                        wpintel_debug('triggered opml_version function: ' + url);
+                        var opml_url = url + '/wp-links-opml.php';
+                        fetch(opml_url).then(function(response){
+                            response.text().then((source) => {
+                                new Promise(function(resolve, reject){
+                                    try {
+                                        var version = source.match(/generator="WordPress\/(.*?)"/)[1];
+                                        window.wordpress_version = version;
+                                        wpintel_debug('opml: ' + version);
+                                        resolve(true);
+                                    } catch(err) {
+                                        wpintel_debug('Error detecting version from opml source: ' + err);
+                                        reject(true);
+                                    }
+                                }).then(() => {
+                                    check_vuln(window.wordpress_version)
+                                    wpintel_debug('Version: ' + wordpress_version + ' detected via wp-links-opml.php');
+                                    return true;
+                                }).catch(() => {reject(true)});;
+                            });
+                        }).catch(() => {
+                            // catch for fetch for opml
+                            wpintel_debug('fetch caught exception for atom');
+                            reject(true);
+                        });
+                    }).then(() => {
+                        //check_vuln(window.wordpress_version)
+                        //wpintel_debug('Version: ' + wordpress_version + ' detected via wp-links-opml.php');
+                        return true;
+                    }).catch(() => {
+                        show_error('<b>Oops!!!</b><br>WordPress version could not be detected!');
+                        return false;
+                    });
+                });
+            });
+        });
+   });
+}
+
+function check_vuln(version){
+    show_scanning('../images/crawl_vuln.svg', 'Checking for Version Vulnerabilities...', '4');
+    var vuln_ver = version.split(".").join("");
+    var vuln_url = 'https://wpvulndb.com/api/v2/wordpresses/' + vuln_ver;
+    wpintel_debug('wpvuln url: ' + vuln_url);
+    fetch(vuln_url).then((response) => {
+        response.text().then((source) => {
+            wpintel_debug('got version info from wpvulndb successfully');
+            show_version(version, source);
+        }).catch(() => {
+            wpintel_debug('wpvulndb catch 1');
+            show_version(version, false);
+        })
+    }).catch((err) => {
+        wpintel_debug('wpvulndb catch 2: ' + err);
+        show_version(version, false);
+    })
+}

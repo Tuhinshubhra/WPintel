@@ -1,1 +1,253 @@
-function wait(e){return new Promise(function(t){setTimeout(t,e)})}var port=chrome.extension.connect({name:"WPintel connection"});function setdetails(e){window.detailstate=!0;try{e[1].endsWith("/")?window.targeturl=e[1].replace(/.$/,""):window.targeturl=e[1],window.sourcecode=e[2],window.parsedsrc=(new DOMParser).parseFromString(window.sourcecode,"text/html"),window.isWP=e[0],detectHome(window.sourcecode,window.targeturl,window.parsedsrc)}catch(e){wpintel_debug("Something wrong with what content.js sent: "+e)}}function detectHome(e,t,n){for(var r=t.split("//")[1].split("/")[0],o="",i=[],a=n.querySelectorAll("[src],[href]"),d=0;d<a.length;++d){var s=a[d];if(null!==s.getAttribute("src"))var c=s.getAttribute("src");if(null!==s.getAttribute("href"))c=s.getAttribute("href");c&&i.push(c)}for(window.alllinks=i,d=0;d<i.length;d++){var l=i[d];if(l){if(l.match(/wp-(content|include)/)){var u=new RegExp("(http://|https://)"+r+"(.*?)/wp-(content|include)");try{o=l.match(u)[1]+r+l.match(u)[2];wpintel_debug("Target Home from src: "+o);break}catch(e){wpintel_debug("Error while matching href: "+l)}}else if(t.match(/\?p=/)){o="http"+(o=t.match(/http(s|):\/\/(.*?)\/\?p=/))[1]+"://"+o[2],wpintel_debug("Target Home from p: "+o);break}}else wpintel_debug("Skipping null href")}if(""!==o&&o.match(r))return window.url=t,window.targeturl=o,!0;o=t.match(/^(?:\w+\:\/\/)?([^\/]+)(.*)$/)[1];return wpintel_debug("Target Home raw: "+o),window.url=t,window.targeturl="http://"+o,!0}function getDetails(){port.postMessage("sendDetails"),chrome.tabs.query({active:!0,currentWindow:!0},function(e){chrome.tabs.sendMessage(e[0].id,{from:"popup",subject:"sendDetails"},setdetails)})}port.onMessage.addListener(function(e){"details"===e[0]&&(wpintel_debug("got details form back"),window.tabID=e[1],"yes"!==window.isWP&&(wpintel_debug("setting isWP to ture by httph: "+e[3]),window.isWP=e[3]),window.http_headers=e[5])}),document.addEventListener("DOMContentLoaded",function(e){getDetails(),setTimeout(function(){if(void 0!==window.detailstate){if(void 0===window.targeturl)return document.getElementById("target").value="Reload or Enter Manually",show_reload(),!1;document.getElementById("target").value=window.targeturl,"yes"===window.isWP?(wpintel_debug("WordPress installation detected"),wordpress_fond(),document.addEventListener("click",function(e){e.target&&"path_scan"==e.target.id?(wpintel_debug("Path disclosure check"),check_path(window.targeturl)):e.target&&"version_scan"==e.target.id?(wpintel_debug("clicked on start scan"),check_version(window.sourcecode,window.parsedsrc,window.targeturl)):e.target&&"theme_scan"==e.target.id?(wpintel_debug("Themes and plugin check"),check_theme(window.alllinks,window.parsedsrc)):e.target&&"reg_scan"==e.target.id?(wpintel_debug("User registration status check"),check_reg(window.targeturl)):e.target&&"user_scan"==e.target.id&&(wpintel_debug("Username Enumeration"),check_users(window.targeturl))})):(wpintel_debug("WordPress installation not detected"),wordpress_not_found())}else wpintel_debug("window.detailstate not set"),show_error("<b>Oops!!!</b><br>Something went wrong.. try refreshing the page")},500)}),document.addEventListener("click",function(e){if(e.target&&"change_target"==e.target.id){wpintel_debug("Target Changed");var t=document.getElementById("target").value;""!==t&&"Reload or Enter Manually"!==t&&(port.postMessage("Redirect[to]"+t),window.close())}else e.target&&"ret_menu"==e.target.id?wordpress_fond():e.target&&"donate_but"==e.target.id&&donate()}),$(document).ready(function(){$("body").on("click","a",function(){return chrome.tabs.create({url:$(this).attr("href")}),!1}),document.querySelector("body").addEventListener("click",function(e){"relaod_but"===e.target.id&&(wpintel_debug("Pressed the reload button"),chrome.tabs.reload(window.tabID),window.close())})});var _AnalyticsCode="UA-62536809-6";const version=chrome.runtime.getManifest().version;var _gaq=_gaq||[];function trackButtonClick(e){_gaq.push(["_trackEvent",e.target.id,"clicked","Ext version: "+version])}_gaq.push(["_setAccount",_AnalyticsCode]),_gaq.push(["_trackPageview"]),function(){var e=document.createElement("script");e.type="text/javascript",e.async=!0,e.src="https://ssl.google-analytics.com/ga.js";var t=document.getElementsByTagName("script")[0];t.parentNode.insertBefore(e,t)}(),document.addEventListener("DOMContentLoaded",function(){for(var e=document.querySelectorAll("button"),t=0;t<e.length;t++)e[t].addEventListener("click",trackButtonClick)});
+function wait(delay) {
+    return new Promise(function(resolve) {
+        setTimeout(resolve, delay);
+    });
+}
+
+var port = chrome.extension.connect({
+    name: "WPintel connection"
+});
+
+function setdetails(info){
+    // wpintel_debug('Content from content.js: ' + info);
+    window.detailstate = true;
+    try {
+        if (info[1].endsWith('/')){
+            // strip '/' from url
+            window.targeturl = info[1].replace(/.$/,"");
+        } else {
+            window.targeturl = info[1];
+        }
+        window.sourcecode = info[2];
+        window.parsedsrc = new DOMParser().parseFromString(window.sourcecode, 'text/html');
+        window.isWP = info[0];
+        detectHome(window.sourcecode, window.targeturl, window.parsedsrc)
+    } catch(err){
+        wpintel_debug('Something wrong with what content.js sent: ' + err);
+    }
+    
+}
+
+function detectHome(source, url, parsed){
+    // need to fix a way to fucking separate the shit -- what did i mean by this? even idk!
+    // anyways let's get all hrefs and srcs from a and links
+    var domain = url.split('//')[1].split('/')[0]
+    var homeurl = '';
+    var phrefs = [];
+    
+    var srcNodeList = parsed.querySelectorAll('[src],[href]');
+    for (var i = 0; i < srcNodeList.length; ++i) {
+    var item = srcNodeList[i];
+        if(item.getAttribute('src') !== null){
+            var testel = item.getAttribute('src');
+        }
+        if(item.getAttribute('href') !== null){
+            var testel = item.getAttribute('href');
+        }
+        if (testel){
+            phrefs.push(testel)
+        } 
+    }
+    window.alllinks = phrefs;
+    for (i=0; i < phrefs.length; i++){
+        var href_to_test = phrefs[i];
+        if (!href_to_test){
+            wpintel_debug('Skipping null href');
+        } else {
+            if (href_to_test.match(/wp-(content|include)/)){
+                var re = new RegExp('(http://|https://)' + domain + '(.*?)\/wp-(content|include)');
+                try{
+                    var homeurl = href_to_test.match(re)[1] + domain + href_to_test.match(re)[2]
+                    wpintel_debug('Target Home from src: ' + homeurl);
+                    break;
+                } catch(err){
+                    wpintel_debug('Error while matching href: ' + href_to_test)
+                }
+                
+            } else if (url.match(/\?p=/)){
+                var homeurl = url.match(/http(s|):\/\/(.*?)\/\?p=/)
+                homeurl = 'http' + homeurl[1] + '://' + homeurl[2]
+                wpintel_debug('Target Home from p: ' + homeurl);
+                break;
+            }
+        }
+    }
+    
+    if (homeurl !== '' && homeurl.match(domain)){
+        window.url = url;
+        window.targeturl = homeurl;
+        return true;
+    } else {
+        var homeurl = url.match(/^(?:\w+\:\/\/)?([^\/]+)(.*)$/)[1]
+        wpintel_debug('Target Home raw: ' + homeurl);
+        window.url = url;
+        window.targeturl = 'http://' + homeurl;
+        return true;
+    }
+}
+
+function getDetails(){
+    // Communication with background.js
+    port.postMessage('sendDetails');
+
+    // Communication with content.js
+    chrome.tabs.query({
+        active: true,
+        currentWindow: true
+        }, function (tabs) {
+        chrome.tabs.sendMessage(
+            tabs[0].id,
+            {from: 'popup', subject: 'sendDetails'},
+            setdetails);
+        });
+}
+port.onMessage.addListener(function(msg) {
+    if (msg[0] === 'details'){
+        // assign details that we got from backgroud
+        // msg = [details, tabID, url, isWP, Source code, Headers]
+        wpintel_debug('got details form back');
+        window.tabID = msg[1];
+        if (window.isWP !== 'yes'){
+            // if wordpress is detected via http headers
+            wpintel_debug('setting isWP to ture by httph: ' + msg[3])
+            window.isWP = msg[3];
+        }
+        window.http_headers = msg[5];
+    }
+});
+
+
+document.addEventListener("DOMContentLoaded", function(event) {
+
+    // Get all the information from background.js
+    getDetails();
+    setTimeout(main, 500);
+
+    // okay let's begin
+    function main(){
+        if (typeof window.detailstate !== 'undefined'){
+            // Set the target placeholder value
+            if (window.targeturl !== undefined){
+                document.getElementById('target').value = window.targeturl;
+            } else {
+                document.getElementById('target').value = "Reload or Enter Manually";
+                show_reload();
+                //var bgPage = chrome.extension.getBackgroundPage();
+                //bgPage.activateIcon('0');
+                /**chrome.runtime.sendMessage({
+                    action: 'activateIcon', 
+                    state: '0', 
+                    //http_headers: headers
+                });*/
+                return false;
+            }
+            // Check WordPress
+            if (window.isWP === 'yes'){
+                wpintel_debug('WordPress installation detected');
+                //var bgPage = chrome.extension.getBackgroundPage();
+                //bgPage.activateIcon('1');
+                /**chrome.runtime.sendMessage({
+                    action: 'activateIcon', 
+                    state: '1', 
+                    //http_headers: headers
+                });*/
+                wordpress_fond();
+
+                document.addEventListener('click', function(e){
+                    if (e.target && e.target.id == 'path_scan'){
+                        wpintel_debug('Path disclosure check');
+                        check_path(window.targeturl);
+                    }
+                    else if (e.target && e.target.id == 'version_scan'){
+                        wpintel_debug('clicked on start scan');
+                        check_version(window.sourcecode, window.parsedsrc, window.targeturl);
+                    }
+                    else if (e.target && e.target.id == 'theme_scan'){
+                        wpintel_debug('Themes and plugin check');
+                        check_theme(window.alllinks, window.parsedsrc);
+                    }
+                    else if (e.target && e.target.id == 'reg_scan'){
+                        wpintel_debug('User registration status check');
+                        check_reg(window.targeturl);
+                    }
+                    else if (e.target && e.target.id == 'user_scan'){
+                        wpintel_debug('Username Enumeration');
+                        check_users(window.targeturl);
+                    }
+                })
+            } else {
+                /**chrome.runtime.sendMessage({
+                    action: 'activateIcon', 
+                    state: '0', 
+                    //http_headers: headers
+                });*/
+                wpintel_debug('WordPress installation not detected');
+                wordpress_not_found();
+            }
+        } else {
+                /**chrome.runtime.sendMessage({
+                    action: 'activateIcon', 
+                    state: '0', 
+                    //http_headers: headers
+                });*/
+            wpintel_debug('window.detailstate not set');
+            show_error('<b>Oops!!!</b><br>Something went wrong.. try refreshing the page');
+        }
+    }
+
+
+ 
+});
+document.addEventListener('click',function(e){
+    if(e.target && e.target.id== 'change_target'){
+        wpintel_debug('Target Changed')
+        var rurl = document.getElementById('target').value;
+        if (rurl !== "" && rurl !== "Reload or Enter Manually"){
+            port.postMessage("Redirect[to]" + rurl);
+            window.close();
+        }
+    }
+    else if(e.target && e.target.id== 'ret_menu'){
+        wordpress_fond();
+    }
+    else if(e.target && e.target.id== 'donate_but'){
+        donate();
+    }
+ })
+
+ $(document).ready(function(){
+    $('body').on('click', 'a', function(){
+      chrome.tabs.create({url: $(this).attr('href')});
+      return false;
+    });
+    document.querySelector('body').addEventListener('click', function(event) {
+        if (event.target.id === 'relaod_but') {
+            wpintel_debug('Pressed the reload button');
+            chrome.tabs.reload(window.tabID);
+            window.close();
+        }
+      });
+ });
+
+var _AnalyticsCode = 'UA-62536809-6';
+const version = chrome.runtime.getManifest().version
+var _gaq = _gaq || [];
+_gaq.push(['_setAccount', _AnalyticsCode]);
+_gaq.push(['_trackPageview']);
+(function() {
+  var ga = document.createElement('script');
+  ga.type = 'text/javascript';
+  ga.async = true;
+  ga.src = 'https://ssl.google-analytics.com/ga.js';
+  var s = document.getElementsByTagName('script')[0];
+  s.parentNode.insertBefore(ga, s);
+})();
+function trackButtonClick(e) {
+  _gaq.push(['_trackEvent', e.target.id, 'clicked', 'Ext version: ' + version]);
+}
+document.addEventListener('DOMContentLoaded', function () {
+  var buttons = document.querySelectorAll('button');
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener('click', trackButtonClick);
+  }
+});
