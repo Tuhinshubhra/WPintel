@@ -29,7 +29,7 @@ function setdetails(info){
 }
 
 function detectHome(source, url, parsed){
-    // need to fix a way to fucking separate the shit -- what did i mean by this? even idk!
+    // need to fix a way to freaking separate the thing -- what did i mean by this? even idk!
     // anyways let's get all hrefs and srcs from a and links
     var domain = url.split('//')[1].split('/')[0]
     var homeurl = '';
