@@ -6,7 +6,7 @@
 </p>
 
 <p align='center'>
-	<a href="#features">Features</a> • <a href="#installation">Installation</a> • <a href="#how-to-use">Use</a> • <a href="#license">License</a> • <a href="https://chrome.google.com/webstore/detail/wpintel-wordpress-vulnera/mkhmkjcbidkifopffebieonhhkondlfe">Download</a>
+	<a href="#features">Features</a> • <a href="#installation">Installation</a> • <a href="#how-to-use">Use</a> • <a href="#license">License</a> • <a href="https://chrome.google.com/webstore/detail/wpintel-wordpress-vulnera/mkhmkjcbidkifopffebieonhhkondlfe" target="_blank">Download</a>
 </p>
 
 
@@ -23,7 +23,7 @@
 ## Installation
 Google chrome users can download WPintel from Chrome Web Store
 <p align='center'>
-<a href="https://chrome.google.com/webstore/detail/wpintel-wordpress-vulnera/mkhmkjcbidkifopffebieonhhkondlfe"><img src="https://i.imgur.com/qL8mPHA.png" alt="Download" width="300px"></a>
+<a href="https://chrome.google.com/webstore/detail/wpintel-wordpress-vulnera/mkhmkjcbidkifopffebieonhhkondlfe" target="_blank"><img src="https://i.imgur.com/qL8mPHA.png" alt="Download" width="300px"></a>
 </p>
 
 ## How to use?
