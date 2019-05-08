@@ -28,18 +28,21 @@ Google chrome users can download WPintel from Chrome Web Store
 
 ## How to use?
 **Understanding the icon colors**
+
 Using WPintel is pretty straight forward. Once you have added WPintel you can check whether  a site is using WordPress or not by the color of the WPintel icon. 
 <p align='center'>
 <img src='https://i.imgur.com/9w6fx94.png' width='600'>
 </p>
 
 **Scan Menu**
+
 Once the color of the icon is green you can click on it and you will be provided with the following option screen, click on the desired scan and it'll be done.
 <p align='center'>
 <img src='https://i.imgur.com/9WIHZsZ.png' width='300'>
 </p>
 
 **Change Target**
+
 You can change the target website from WPintel extension itself, just change the website address to target website and click on `Set Target`
 <p align='center'>
 <img src='https://i.imgur.com/neWo5pt.png' >
