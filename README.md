@@ -1,5 +1,5 @@
 
-
+  
 
 <p align='center'>
   <img src="https://i.imgur.com/pG4RQKE.png" alt="WPintel Logo"> <br>
@@ -9,6 +9,10 @@
 	<a href="#features">Features</a> • <a href="#installation">Installation</a> • <a href="#how-to-use">Use</a> • <a href="#license">License</a> • <a href="https://chrome.google.com/webstore/detail/wpintel-wordpress-vulnera/mkhmkjcbidkifopffebieonhhkondlfe" target="_blank">Download</a>
 </p>
 
+## Video Demonstration
+<p align='center'>
+<a href="[https://www.youtube.com/watch?v=YlSjmfflAO0](https://www.youtube.com/watch?v=YlSjmfflAO0)"><img src='https://i.imgur.com/2mwYSjF.png' width='560'></a>
+</p>
 
 ## Features
 
@@ -47,6 +51,7 @@ You can change the target website from WPintel extension itself, just change the
 <p align='center'>
 <img src='https://i.imgur.com/neWo5pt.png' >
 </p>
+
 
 ## License
 WPintel is licensed under [GNU General Public License v3.0](https://github.com/Tuhinshubhra/WPintel/blob/master/LICENSE).
