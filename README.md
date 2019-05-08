@@ -11,7 +11,7 @@
 
 ## Video Demonstration
 <p align='center'>
-<a href="[https://www.youtube.com/watch?v=YlSjmfflAO0](https://www.youtube.com/watch?v=YlSjmfflAO0)"><img src='https://i.imgur.com/2mwYSjF.png' width='560'></a>
+<a href="https://www.youtube.com/watch?v=YlSjmfflAO0"><img src='https://i.imgur.com/2mwYSjF.png'></a>
 </p>
 
 ## Features
