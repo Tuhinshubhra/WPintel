@@ -1,4 +1,17 @@
 
+function sanitize(string) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        "/": '&#x2F;',
+    };
+    const reg = /[&<>"'/]/ig;
+    return string.replace(reg, (match)=>(map[match]));
+  }
+
 function show_error(msg){
     var error_html = `
     <div id="error" class="error"">
@@ -121,7 +134,7 @@ function show_themes_and_plugins(url, themes, plugins){
             </tr>
         `
         for (var i = 0; i < themes.length; i++){
-            var theme = themes[i];
+            var theme = sanitize(themes[i]);
             var theme_url = '<a href="' + url + '/wp-content/themes/' + theme + '">' + theme + "</a>";
             themes_table += `
             <tr>
@@ -145,7 +158,7 @@ function show_themes_and_plugins(url, themes, plugins){
             </tr>
         `
         for (var i = 0; i < plugins.length; i++){
-            var plugin = plugins[i];
+            var plugin = sanitize(plugins[i]);
             var plugin_url = '<a href="' + url + '/wp-content/plugins/' + plugin + '">' + plugin + "</a>";
             plugins_table += `
             <tr>
@@ -173,8 +186,8 @@ function show_users(userarray){
     `
     for (var i=0; i < userarray.length; i++){
         if (userarray[i] !== '||'){
-            var slug = userarray[i].split('||')[0]
-            var display = userarray[i].split('||')[1]
+            var slug = sanitize(userarray[i].split('||')[0]);
+            var display = sanitize(userarray[i].split('||')[1]);
             contents += `
             <tr>
                 <td>` + display + `</td>
@@ -184,7 +197,7 @@ function show_users(userarray){
         }
     }
 
-    contents += '</table>'
+    contents += '</table>';
     document.getElementById('container').innerHTML = contents;
 }
 
