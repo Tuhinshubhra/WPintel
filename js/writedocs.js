@@ -222,7 +222,7 @@ function show_version(version, vulns){
                 content += '<div class="latest_ver ver_badge">ERR</div><br><br><div class="inline_error">There was an error while getting version vulnerabilities!</div>';
             } else {
                 vulns = JSON.parse(vulns);
-                var wpvulns = vulns[version]['vulnerabilities'];
+                var wpvulns = vulns['vulnerabilities'];
                 if (wpvulns.length > 0){
                     var vulncount = wpvulns.length;
                     content += '<div class="outdated_ver ver_badge">' + vulncount + ' vulns</div>';
@@ -231,16 +231,17 @@ function show_version(version, vulns){
                     <table class="plugins_table">
                         <tr>
                             <th>Vulnerability</th>
-                            <th>Reference URL</th>
+                            
                         </tr>
                     `;
                     for (var i=0; i < vulncount; i++){
-                        var title = wpvulns[i]['title']
-                        var rurl = '<a href="' + wpvulns[i]['references']['url'] + '">Link</a>';
+                        var title = wpvulns[i]['name']
+                        // var rurl = '<a href="' + wpvulns[i]['references']['url'] + '">Link</a>';
+						// var rurl = "rurl_remove";
                         content += `
                         <tr>
                             <td>` + title + `</td>
-                            <td>` + rurl + `</td>
+                            
                         </tr>       
                         `
                     }

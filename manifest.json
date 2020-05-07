@@ -1,7 +1,7 @@
 {
     "name": "WPintel - WordPress Vulnerability Scanner",
     "author": "Tuhinshubhra",
-    "version": "1.8",
+    "version": "1.9",
     "description": "WordPress Vulnerability Scanner - Scan for vulnerabilities, version, themes, plugins and much more!",
     "manifest_version": 2,
     "icons" : {

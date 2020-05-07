@@ -306,10 +306,17 @@ function check_version(source_string, parsed_source, url){
 }
 
 function check_vuln(version){
+	
+	/*
+		TODO: change the domain from dev to pub
+		FIXED: instead of wpvulndb use my own custom database
+	*/
+	
     show_scanning('../images/crawl_vuln.svg', 'Checking for Version Vulnerabilities...', '4');
-    var vuln_ver = version.split(".").join("");
-    var vuln_url = 'https://wpvulndb.com/api/v2/wordpresses/' + vuln_ver;
-    wpintel_debug('wpvuln url: ' + vuln_url);
+    // var vuln_ver = version.split(".").join("");
+    // var vuln_url = 'https://wpvulndb.com/api/v2/wordpresses/' + vuln_ver;
+    var vuln_url = `http://wpvulntest.0xr3d.com/version/${version}.json`;
+	wpintel_debug('wpvuln url: ' + vuln_url);
     fetch(vuln_url).then((response) => {
         response.text().then((source) => {
             wpintel_debug('got version info from wpvulndb successfully');
