@@ -24,55 +24,33 @@ function DOMtoString(document_root) {
     }
     return html;
 }
+
 window.onload=function(){
     var domain = window.location.hostname
     wpintel_debug("page load! domain: " + domain);
     var wpdetected = false;
     var srcNodeList = document.querySelectorAll('[src],[href]');
     for (var i = 0; i < srcNodeList.length; ++i) {
-    var item = srcNodeList[i];
-        if(item.getAttribute('src') !== null){
-            var testel = item.getAttribute('src');
-        }
-        if(item.getAttribute('href') !== null){
-            var testel = item.getAttribute('href');
-        }
+        var item = srcNodeList[i];
+        var testel = item.getAttribute( item.getAttribute('src') ? 'src' : 'href');
         var re = new RegExp('(http://|https://|)('+domain+'|/|)(.*?)wp-(content|include)')
         if (testel.match(re)){
             wpdetected = true;
             break;
         }
     }
-    if (wpdetected === true)
-    {
-        wpintel_debug('WordPress Detected');
-        window.iswp = 'yes';
-        window.sourcecode = new XMLSerializer().serializeToString(document);
-        window.targeturl = window.location.href;
-        chrome.runtime.sendMessage({
-            action: 'yes', 
-            site_url: window.location.href, 
-            site_html: new XMLSerializer().serializeToString(document), 
-            //http_headers: headers
-        });
-    }
-    else
-    {
-        wpintel_debug('WordPress NOT Detected');
-        window.iswp = 'no';
-        window.sourcecode = new XMLSerializer().serializeToString(document);
-        window.targeturl = window.location.href;
-	    chrome.runtime.sendMessage({
-            action: 'no', 
-            site_url: window.location.href, 
-            site_html: new XMLSerializer().serializeToString(document), 
-            //http_headers: headers
-        });
-    }
-
-    
-    
+    wpintel_debug(wpdetected ? 'WordPress Detected' : 'WordPress NOT Detected');
+    window.iswp = wpdetected ? 'yes' : 'no';
+    window.sourcecode = new XMLSerializer().serializeToString(document);
+    window.targeturl = window.location.href;
+    chrome.runtime.sendMessage({
+        action: wpdetected ? 'yes' : 'no', 
+        site_url: window.location.href, 
+        site_html: new XMLSerializer().serializeToString(document), 
+        //http_headers: headers
+    });
 }
+
 // Listen for messages from the popup
 chrome.runtime.onMessage.addListener(function (msg, sender, response) {
     if ((msg.from === 'popup') && (msg.subject === 'sendDetails')) {

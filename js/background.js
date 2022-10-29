@@ -14,7 +14,7 @@ chrome.tabs.onActivated.addListener(function(id, info, tab){
 });
 
 function tabUpdated(tab){
-    if (tab !== undefined && tab !== "" && tab !== false){
+    if (!tab) return;
     wpintel_debug('tabUpdated: ' + tab.id);
     window.curtabid = tab.id;
     chrome.pageAction.show(tab.id,
@@ -40,32 +40,31 @@ function tabUpdated(tab){
         },
         {urls: ['https://*/*', 'http://*/*'], types: ["main_frame"], tabId: tab.id},
         ['responseHeaders']);
-    }
 }
 
 function activateIcon(typ, thetab){
-    if (window.curtabid !== undefined && window.curtabid !== "" && window.curtabid !== false){
-        wpintel_debug('Triggered activateIcon with type: ' + typ + ' tabid: ' + thetab);
-        if (typ == '1'){
-            chrome.pageAction.setIcon({
-                tabId: thetab,
-                path: "../images/active.png"
-            });
-            chrome.pageAction.setTitle({
-                tabId: thetab,
-                title: "WordPress Detected! You can now scan the site."
-            });
-        } else {
-            chrome.pageAction.setIcon({
-                tabId: thetab,
-                path: "../images/error.png"
-            });
-            chrome.pageAction.setTitle({
-                tabId: thetab,
-                title: "The site doesn't run on WordPress or so does my scan say!"
-            });
-        }
-    } 
+    if (!window.curtabid) return;
+    wpintel_debug('Triggered activateIcon with type: ' + typ + ' tabid: ' + thetab);
+    if (typ == '1'){
+        chrome.pageAction.setIcon({
+            tabId: thetab,
+            path: "../images/active.png"
+        });
+        chrome.pageAction.setTitle({
+            tabId: thetab,
+            title: "WordPress Detected! You can now scan the site."
+        });
+        return;
+    }
+
+    chrome.pageAction.setIcon({
+        tabId: thetab,
+        path: "../images/error.png"
+    });
+    chrome.pageAction.setTitle({
+        tabId: thetab,
+        title: "The site doesn't run on WordPress or so does my scan say!"
+    });
 }
 
 chrome.runtime.onMessage.addListener (
