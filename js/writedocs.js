@@ -201,59 +201,57 @@ function show_users(userarray){
     document.getElementById('container').innerHTML = contents;
 }
 
-function show_version(version, vulns){
+async function show_version(version, vulns){
     var lurl = 'https://api.wordpress.org/core/version-check/1.7/';
     wpintel_debug(version);
-    fetch(lurl).then((response) => {
-        response.text().then((source) => {
-            var jsons = JSON.parse(source);
-            var latest_version = jsons['offers'][0]['version'];
-            var content = `
-            <div class="wp_ver_info">
-                <div class="cur_ver">Version : ` + version + `</div>
-            `
-            if (version === latest_version){
-                content += '<div class="latest_ver ver_badge">✔ Latest</div>';
-            } else {
-                content += '<div class="outdated_ver ver_badge">✖ Outdated</div>';
-            }
+    var f = await fetch(lurl);
+    var source = await f.text();
+    var jsons = JSON.parse(source);
+    var latest_version = jsons['offers'][0]['version'];
+    var content = `
+    <div class="wp_ver_info">
+        <div class="cur_ver">Version : ` + version + `</div>
+    `
+    if (version === latest_version){
+        content += '<div class="latest_ver ver_badge">✔ Latest</div>';
+    } else {
+        content += '<div class="outdated_ver ver_badge">✖ Outdated</div>';
+    }
 
-            if (!vulns || vulns === ""){
-                content += '<div class="latest_ver ver_badge">ERR</div><br><br><div class="inline_error">There was an error while getting version vulnerabilities!</div>';
-            } else {
-                vulns = JSON.parse(vulns);
-                var wpvulns = vulns['vulnerabilities'];
-                if (wpvulns.length > 0){
-                    var vulncount = wpvulns.length;
-                    content += '<div class="outdated_ver ver_badge">' + vulncount + ' vulns</div>';
-                    content += `
-                    </div>
-                    <table class="plugins_table">
-                        <tr>
-                            <th>Vulnerability</th>
-                            
-                        </tr>
-                    `;
-                    for (var i=0; i < vulncount; i++){
-                        var title = wpvulns[i]['name']
-                        // var rurl = '<a href="' + wpvulns[i]['references']['url'] + '">Link</a>';
-						// var rurl = "rurl_remove";
-                        content += `
-                        <tr>
-                            <td>` + title + `</td>
-                            
-                        </tr>       
-                        `
-                    }
-                    content += '</table>'
-                } else {
-                    content += '<div class="latest_ver ver_badge">0 Vulns</div><br><br><div class="inline_error">This version of WordPress has no public vulnerabilities!</div>';
-                }
-                
-            }
-            document.getElementById('container').innerHTML = content;
-        });
-    });
+    if (!vulns || vulns === ""){
+        content += '<div class="latest_ver ver_badge">! ERR</div><br><br><div class="inline_error">There was an error while getting version vulnerabilities!</div>';
+        document.getElementById('container').innerHTML = content;
+        return;
+    }
+    vulns = JSON.parse(vulns);
+    var wpvulns = vulns['vulnerabilities'];
+    if (!wpvulns || wpvulns <= 0){
+        content += '<div class="latest_ver ver_badge">0 Vulns</div><br><br><div class="inline_error">This version of WordPress has no public vulnerabilities!</div>';
+        document.getElementById('container').innerHTML = content;
+        return;
+    }
+    
+    var vulncount = wpvulns.length;
+    content += '<div class="outdated_ver ver_badge">' + vulncount + ' vulns</div>';
+    content += `
+    </div>
+    <table class="plugins_table">
+        <tr>
+            <th>Vulnerability</th>
+            
+        </tr>
+    `;
+    for (var i=0; i < vulncount; i++){
+        var title = wpvulns[i]['name']
+        content += `
+        <tr>
+            <td>` + title + `</td>
+            
+        </tr>       
+        `
+    }
+    content += '</table>'
+    document.getElementById('container').innerHTML = content;
 }
 
 function show_reload(){

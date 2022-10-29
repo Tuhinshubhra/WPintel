@@ -30,67 +30,55 @@ async function check_users(url){
     show_scanning('../images/users.svg', 'Acquiring Usernames...', '7');
     var json_url = url + '/wp-json/wp/v2/users';
     window.wordpress_users = [];
-    
-    fetch(json_url).then((response) => {
-        response.text().then((content) => {
-            if (/slug/.test(content)){
-                var json_content = JSON.parse(content);
-                for (var i=0; i < json_content.length; i++){
-                    try {
-                        var user = json_content[i]['slug'];
-                        wpintel_debug('Enumerated username: ' + user);
-                        user += '||' + json_content[i]['name']
-                        window.wordpress_users.push(user);
-                    } catch (err) {
-                        wpintel_debug('Error getting user slug: ' + err);
-                    }
-                }
-                if (window.wordpress_users.length > 0){
-                    show_users(window.wordpress_users);
-                    return true;
-                } else {
-                    show_error('No usernames could be enumerated!');
-                    return false;
-                }
-            } else {
-                wpintel_debug('no "slug" in json content');
-                show_error('No usernames could be enumerated!');
-                return false;
+    let json_response = await fetch(json_url);
+    let content = await json_response.text();
+    if (/slug/.test(content)){
+        var json_content = JSON.parse(content);
+        for (var i=0; i < json_content.length; i++){
+            try {
+                var user = json_content[i]['slug'];
+                wpintel_debug('Enumerated username: ' + user);
+                user += '||' + json_content[i]['name']
+                window.wordpress_users.push(user);
+            } catch (err) {
+                wpintel_debug('Error getting user slug: ' + err);
             }
-        })
-    }).catch((err) => {
-        wpintel_debug('Something went wrong while getting json content: ' + err);
+        }
+        if (window.wordpress_users.length > 0){
+            show_users(window.wordpress_users);
+            return true;
+        } else {
+            show_error('No usernames could be enumerated!');
+            return false;
+        }
+    } else {
+        wpintel_debug('no "slug" in json content');
         show_error('No usernames could be enumerated!');
         return false;
-    })
+    }
 }
+
 
 async function check_reg(url){
     show_scanning('../images/reg.svg', 'Probing User Registration...', '5');
     var reg_url = url + '/wp-login.php?action=register';
     wpintel_debug('Registration URL: ' + reg_url);
-    var reg_source = await getregsrc(reg_url);
-
-    async function getregsrc(url){
-        fetch(url).then((response) => {
-            response.text().then((source) => {
-                wpintel_debug('got registration source');
-                if (/<form/.test(source)){
-                    if (/Registration confirmation will be emailed to you/.test(source) || /value="Register"/.test(source) || /id="user_email"/.test(source)){
-                        var reg_ahref = '<a href="' + reg_url + '" class="reg_button">REGISTER HERE</a>'
-                        show_success('User registration is <b>enabled</b> in this site.<br><br>' + reg_ahref);
-                        return true;
-                    } else {
-                        show_error('User registration disabled!');
-                        wpintel_debug('No valid registration element found');
-                        return false;
-                    }
-                } else {
-                    show_error('User registration disabled!');
-                    return false;
-                }
-            });
-        });
+    let reg_fetch = await fetch(reg_url);
+    let source = await reg_fetch.text();
+    wpintel_debug('got registration source');
+    if (/<form/.test(source)){
+        if (/Registration confirmation will be emailed to you/.test(source) || /value="Register"/.test(source) || /id="user_email"/.test(source)){
+            var reg_ahref = '<a href="' + reg_url + '" class="reg_button">REGISTER HERE</a>'
+            show_success('User registration is <b>enabled</b> in this site.<br><br>' + reg_ahref);
+            return true;
+        } else {
+            show_error('User registration disabled!');
+            wpintel_debug('No valid registration element found');
+            return false;
+        }
+    } else {
+        show_error('User registration disabled!');
+        return false;
     }
 }
 
@@ -153,159 +141,100 @@ async function check_theme(alllinks, parsed_source){
     }
 }
 
+function fetch_version_from_generator(parsed_source){
+    wpintel_debug('checking version via generator meta tag');
+    try {
+        var generator_version = parsed_source.querySelector("meta[name='generator']").getAttribute("content");
+        if (/WordPress/.test(generator_version)){
+            var version = generator_version.match(/WordPress (.*)/)[1];
+            return version;
+        } else {
+            wpintel_debug('version detection using generator failed');
+            return undefined;
+        }
+    } catch(err) {
+        return undefined;
+    }
+}
 
-function check_version(source_string, parsed_source, url){
+function fetch_version_from_emoji(source_string){
+    if (/wp-emoji-release\.min\.js\?ver/.test(source_string)){
+        var version = source_string.match(/wp-emoji-release\.min\.js\?ver=(.*?)"/)[1];
+        return version
+    }
+}
+
+async function fetch_version_from_feed(url){
+    var feed_url = url + '/feed/';
+    var f = await fetch(feed_url);
+    var source = await f.text();
+    try {
+        var version = source.match(/<generator>https:\/\/wordpress.org\/\?v=(.*?)<\/generator>/)[1];
+        return version;
+    } catch(err){
+        wpintel_debug('version detection via feeds failed: ' + err);
+        return undefined;
+    } 
+}
+
+async function fetch_version_from_atom(url){
+    wpintel_debug('triggered atom_version function: ' + url);
+    var atom_url = url + '/feed/atom';
+    var f = await fetch(atom_url);
+    var source = await f.text();
+    try {
+        var version = source.match(/version="(.*?)">WordPress/)[1];
+        return version;
+    } catch(err) {
+        wpintel_debug('Error detecting version via atom feed: ' + err);
+        return undefined;
+    }
+}
+
+async function fetch_version_from_opml(url){
+    wpintel_debug('triggered opml_version function: ' + url);
+    var opml_url = url + '/wp-links-opml.php';
+    var f = await fetch(opml_url);
+    var source = await f.text();
+    try {
+        var version = source.match(/generator="WordPress\/(.*?)"/)[1];
+        return version;
+    } catch(err) {
+        wpintel_debug('Error detecting version from opml source: ' + err);
+        return false;
+    }
+}
+
+async function check_version(source_string, parsed_source, url){
     show_scanning('../images/version.svg', 'Getting WordPress Version...', '1');
     var var_detected = false;
     window.wordpress_version = '0';
-    new Promise(function (resolve, reject){
-        // the generator meta tag check
-        wpintel_debug('checking version via generator meta tag');
-        try {
-            var generator_version = parsed_source.querySelector("meta[name='generator']").getAttribute("content");
-            if (/WordPress/.test(generator_version)){
-                var version = generator_version.match(/WordPress (.*)/)[1];
-                window.wordpress_version = version;
-                resolve(true);
-            } else {
-                wpintel_debug('version detection using generator failed');
-                reject(true);
-            }
-        } catch(err) {
-            wpintel_debug('error with generator meta tag: ' + err);
-            reject(true);
-        }
-    }).then(() => {
-        // version detected via generator meta tag
-        check_vuln(window.wordpress_version)
-        wpintel_debug('Version: ' + wordpress_version + ' detected via generator meta tag');
-        return true;
-    }).catch(() => {
-        new Promise((resolve, reject) => {
-           if (/wp-emoji-release\.min\.js\?ver/.test(source_string)){
-               var version = source_string.match(/wp-emoji-release\.min\.js\?ver=(.*?)"/)[1];
-               window.wordpress_version = version;
-               resolve(true);
-           } else {
-               wpintel_debug('Version detection via wp-emoji failed!');
-               reject(true);
-           }
-        }).then(() => {
-            // version detected via generator meta tag
-            check_vuln(window.wordpress_version)
-            wpintel_debug('Version: ' + wordpress_version + ' detected via wp-emoji');
-            return true;
-        }).catch(() => {
-            new Promise(function (resovle, reject){
-                // feed version check
-                wpintel_debug('triggered feed_version function: ' + url);
-                var feed_url = url + '/feed/';
-                fetch(feed_url).then(function (response){
-                    response.text().then((source) => {
-                        new Promise(function(resolve, reject){
-                            try {
-                                // wpintel_debug(source);
-                                var version = source.match(/<generator>https:\/\/wordpress.org\/\?v=(.*?)<\/generator>/)[1];
-                                window.wordpress_version = version;
-                                wpintel_debug('feed: ' + version);
-                                resolve(true);
-                            } catch(err){
-                                wpintel_debug('version detection via feeds failed: ' + err);
-                                reject(true);
-                            } 
-                        }).then(() => {
-                            // version detected via feed
-                            check_vuln(window.wordpress_version)
-                            wpintel_debug('Version: ' + wordpress_version + ' detected via /feed/');
-                            return true;
-                        }).catch(() => {reject(true)});     
-                    });
-                }).catch(() => {
-                    // the fetch had some issues
-                    wpintel_debug('fetch caught exception for feed');
-                    reject(true);
-                });
-            }).then(() => {
-                // version detected via feed
-                //check_vuln(window.wordpress_version)
-                //wpintel_debug('Version: ' + wordpress_version + ' detected via /feed/');
-                return true;
-            }).catch(() => {
-                new Promise(function(resolve, reject){
-                    // atom version check
-                    wpintel_debug('triggered atom_version function: ' + url);
-                    var atom_url = url + '/feed/atom';
-                    fetch(atom_url).then(function(response){
-                        response.text().then((source) => {
-                            new Promise(function(resolve, reject){
-                                try {
-                                    var version = source.match(/version="(.*?)">WordPress/)[1];
-                                    window.wordpress_version = version;
-                                    wpintel_debug('atom: ' + version);
-                                    resolve(true);
-                                } catch(err) {
-                                    wpintel_debug('Error detecting version via atom feed: ' + err);
-                                    reject(true);
-                                }
-                            }).then(() => {
-                                // version detection successful via atom
-                                check_vuln(window.wordpress_version)
-                                wpintel_debug('Version: ' + wordpress_version + ' detected via /feed/atom/');
-                                return true;
-                            }).catch(() => {reject(true)});;
-                        });
-                    }).catch(() => {
-                        // catch for fetch for atom
-                        wpintel_debug('fetch caught exception for atom');
-                        reject(true);
-                    });
-                }).then(() => {
-                    // version detection successful via atom
-                    //check_vuln(window.wordpress_version)
-                    //wpintel_debug('Version: ' + wordpress_version + ' detected via /feed/atom/');
-                    return true;
-                }).catch(() => {
-                    new Promise(function(resolve, reject){
-                        wpintel_debug('triggered opml_version function: ' + url);
-                        var opml_url = url + '/wp-links-opml.php';
-                        fetch(opml_url).then(function(response){
-                            response.text().then((source) => {
-                                new Promise(function(resolve, reject){
-                                    try {
-                                        var version = source.match(/generator="WordPress\/(.*?)"/)[1];
-                                        window.wordpress_version = version;
-                                        wpintel_debug('opml: ' + version);
-                                        resolve(true);
-                                    } catch(err) {
-                                        wpintel_debug('Error detecting version from opml source: ' + err);
-                                        reject(true);
-                                    }
-                                }).then(() => {
-                                    check_vuln(window.wordpress_version)
-                                    wpintel_debug('Version: ' + wordpress_version + ' detected via wp-links-opml.php');
-                                    return true;
-                                }).catch(() => {reject(true)});;
-                            });
-                        }).catch(() => {
-                            // catch for fetch for opml
-                            wpintel_debug('fetch caught exception for atom');
-                            reject(true);
-                        });
-                    }).then(() => {
-                        //check_vuln(window.wordpress_version)
-                        //wpintel_debug('Version: ' + wordpress_version + ' detected via wp-links-opml.php');
-                        return true;
-                    }).catch(() => {
-                        show_error('<b>Oops!!!</b><br>WordPress version could not be detected!');
-                        return false;
-                    });
-                });
-            });
-        });
-   });
+    let version = fetch_version_from_generator(parsed_source);
+    if (!version){
+        version = fetch_version_from_emoji(source_string);
+    }
+    if (!version){
+        version = await fetch_version_from_feed(url);
+    }
+    if (!version){
+        version = await fetch_version_from_atom(url);
+    }
+    if (!version){
+        version = await fetch_version_from_opml(url);
+    }
+
+    if (!version){
+        show_error('<b>Oops!!!</b><br>WordPress version could not be detected!');
+        return;
+    }
+
+    var_detected = true;
+    window.wordpress_version = version;
+    check_vuln(window.wordpress_version)
+    wpintel_debug('Version: ' + wordpress_version + ' detected');
 }
 
-function check_vuln(version){
+async function check_vuln(version){
 	
 	/*
 		TODO: change the domain from dev to pub
@@ -315,18 +244,16 @@ function check_vuln(version){
     show_scanning('../images/crawl_vuln.svg', 'Checking for Version Vulnerabilities...', '4');
     // var vuln_ver = version.split(".").join("");
     // var vuln_url = 'https://wpvulndb.com/api/v2/wordpresses/' + vuln_ver;
-    var vuln_url = `http://wpvulntest.0xr3d.com/version/${version}.json`;
+    var vuln_url = `http://wpvulns.com/version/${version}.json`;
 	wpintel_debug('wpvuln url: ' + vuln_url);
-    fetch(vuln_url).then((response) => {
-        response.text().then((source) => {
-            wpintel_debug('got version info from wpvulndb successfully');
-            show_version(version, source);
-        }).catch(() => {
-            wpintel_debug('wpvulndb catch 1');
-            show_version(version, false);
-        })
-    }).catch((err) => {
-        wpintel_debug('wpvulndb catch 2: ' + err);
-        show_version(version, false);
-    })
+    var f = await fetch(vuln_url);
+
+    if (f.status == 200){
+        wpintel_debug('got version info from wpvulndb successfully');
+        var source = f.text();
+        show_version(version, source);
+        return;
+    }
+
+    show_version(version, false);
 }
