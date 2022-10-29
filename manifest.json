@@ -3,7 +3,7 @@
     "author": "Tuhinshubhra",
     "version": "1.9",
     "description": "WordPress Vulnerability Scanner - Scan for vulnerabilities, version, themes, plugins and much more!",
-    "manifest_version": 2,
+    "manifest_version": 3,
     "icons" : {
         "16": "images/logo_16.png",
         "32": "images/logo_32.png",
@@ -11,7 +11,7 @@
         "128": "images/logo_128.png"
     },
     "background": {
-        "page": "html/background.html"
+        "service_worker": "background.html"
     },
     "page_action": {
         "default_popup": "html/popup.html",
@@ -26,11 +26,16 @@
     "permissions": [
         "tabs", "activeTab", "https://*/*", "http://*/*", "webRequest"
     ],
-    "content_security_policy": "script-src 'self' https://ssl.google-analytics.com; object-src 'self'",
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self';"
+    },
     "content_scripts": [{
         "matches": ["*://*/*"],
         "js": ["js/content.js", "js/include.js"],
         "run_at": "document_start"
     }],
-    "web_accessible_resources": ["resources/Quicksand-Regular.ttf"]
+    "web_accessible_resources": [{
+        "resources": ["resources/Quicksand-Regular.ttf"],
+        "matches": ["*://*/*"]
+    }]
 }
